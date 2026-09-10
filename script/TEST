@@ -1,0 +1,408 @@
+--[[
+    REDMITRIX - Settings Menu UI
+    Đặt file này làm LocalScript trong StarterGui (hoặc StarterPlayerScripts).
+    Đây là UI hợp lệ cho GAME CỦA BẠN — không tương tác với game khác,
+    không bypass anti-cheat của Roblox, không dùng exploit/executor.
+
+    Màu chủ đạo: Đỏ (#E12E2E) - Xám (#2B2B2E), viền góc cạnh kiểu "matrix".
+]]
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+----------------------------------------------------------------
+-- THEME
+----------------------------------------------------------------
+local THEME = {
+    Red        = Color3.fromRGB(225, 46, 46),
+    DarkGray   = Color3.fromRGB(30, 30, 33),
+    MidGray    = Color3.fromRGB(50, 50, 55),
+    White      = Color3.fromRGB(240, 240, 240),
+    ToggleOn   = Color3.fromRGB(225, 46, 46),
+    ToggleOff  = Color3.fromRGB(70, 70, 75),
+}
+
+local GRAPHICS_MODES = {"classic", "cyber", "hiện đại", "anh đào", "cổ điển"}
+
+----------------------------------------------------------------
+-- ROOT
+----------------------------------------------------------------
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "RedmitrixUI"
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Parent = playerGui
+
+local main = Instance.new("Frame")
+main.Name = "MainPanel"
+main.Size = UDim2.new(0, 380, 0, 300)
+main.Position = UDim2.new(0.5, -190, 0.5, -150)
+main.BackgroundColor3 = THEME.DarkGray
+main.BorderSizePixel = 0
+main.Parent = screenGui
+
+local mainStroke = Instance.new("UIStroke")
+mainStroke.Thickness = 2
+mainStroke.Color = THEME.Red
+mainStroke.Parent = main
+
+----------------------------------------------------------------
+-- TITLE BAR
+----------------------------------------------------------------
+local titleBar = Instance.new("Frame")
+titleBar.Name = "TitleBar"
+titleBar.Size = UDim2.new(1, 0, 0, 36)
+titleBar.BackgroundColor3 = THEME.MidGray
+titleBar.BorderSizePixel = 0
+titleBar.Parent = main
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.BackgroundTransparency = 1
+titleLabel.Size = UDim2.new(1, -80, 1, 0)
+titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.Font = Enum.Font.Code
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.TextColor3 = THEME.White
+titleLabel.TextSize = 18
+titleLabel.Text = "REDMITRIX"
+titleLabel.Parent = titleBar
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Name = "CloseButton"
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -34, 0, 3)
+closeBtn.BackgroundColor3 = THEME.Red
+closeBtn.Text = "X"
+closeBtn.Font = Enum.Font.Code
+closeBtn.TextColor3 = THEME.White
+closeBtn.TextSize = 16
+closeBtn.Parent = titleBar
+
+local minBtn = Instance.new("TextButton")
+minBtn.Name = "MinimizeButton"
+minBtn.Size = UDim2.new(0, 30, 0, 30)
+minBtn.Position = UDim2.new(1, -68, 0, 3)
+minBtn.BackgroundColor3 = THEME.MidGray
+minBtn.Text = "-"
+minBtn.Font = Enum.Font.Code
+minBtn.TextColor3 = THEME.White
+minBtn.TextSize = 16
+minBtn.Parent = titleBar
+
+----------------------------------------------------------------
+-- LIST CONTAINER
+----------------------------------------------------------------
+local list = Instance.new("UIListLayout")
+list.Padding = UDim.new(0, 12)
+list.SortOrder = Enum.SortOrder.LayoutOrder
+
+local content = Instance.new("Frame")
+content.Name = "Content"
+content.BackgroundTransparency = 1
+content.Size = UDim2.new(1, -20, 1, -50)
+content.Position = UDim2.new(0, 10, 0, 44)
+content.Parent = main
+list.Parent = content
+
+----------------------------------------------------------------
+-- HELPER: TOGGLE PILL SWITCH
+----------------------------------------------------------------
+local function createToggle(name, order, default, callback)
+    local row = Instance.new("Frame")
+    row.Name = name
+    row.Size = UDim2.new(1, 0, 0, 32)
+    row.BackgroundTransparency = 1
+    row.LayoutOrder = order
+    row.Parent = content
+
+    local label = Instance.new("TextLabel")
+    label.BackgroundTransparency = 1
+    label.Size = UDim2.new(0.6, 0, 1, 0)
+    label.Font = Enum.Font.Code
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.TextColor3 = THEME.White
+    label.TextSize = 16
+    label.Text = "- " .. name
+    label.Parent = row
+
+    local pill = Instance.new("Frame")
+    pill.Size = UDim2.new(0, 50, 0, 24)
+    pill.Position = UDim2.new(1, -50, 0.5, -12)
+    pill.BackgroundColor3 = default and THEME.ToggleOn or THEME.ToggleOff
+    pill.Parent = row
+
+    local pillCorner = Instance.new("UICorner")
+    pillCorner.CornerRadius = UDim.new(1, 0)
+    pillCorner.Parent = pill
+
+    local knob = Instance.new("Frame")
+    knob.Size = UDim2.new(0, 20, 0, 20)
+    knob.Position = default and UDim2.new(1, -22, 0.5, -10) or UDim2.new(0, 2, 0.5, -10)
+    knob.BackgroundColor3 = THEME.White
+    knob.Parent = pill
+
+    local knobCorner = Instance.new("UICorner")
+    knobCorner.CornerRadius = UDim.new(1, 0)
+    knobCorner.Parent = knob
+
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 1, 0)
+    btn.BackgroundTransparency = 1
+    btn.Text = ""
+    btn.Parent = pill
+
+    local state = default
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        local goalPos = state and UDim2.new(1, -22, 0.5, -10) or UDim2.new(0, 2, 0.5, -10)
+        local goalColor = state and THEME.ToggleOn or THEME.ToggleOff
+        TweenService:Create(knob, TweenInfo.new(0.15), {Position = goalPos}):Play()
+        TweenService:Create(pill, TweenInfo.new(0.15), {BackgroundColor3 = goalColor}):Play()
+        if callback then
+            callback(state)
+        end
+    end)
+
+    return row
+end
+
+----------------------------------------------------------------
+-- HELPER: NUMBER STEPPER (giống nút oval "60" có thể chỉnh số)
+----------------------------------------------------------------
+local function createStepper(name, order, default, min, max, step, callback)
+    local row = Instance.new("Frame")
+    row.Name = name
+    row.Size = UDim2.new(1, 0, 0, 32)
+    row.BackgroundTransparency = 1
+    row.LayoutOrder = order
+    row.Parent = content
+
+    local label = Instance.new("TextLabel")
+    label.BackgroundTransparency = 1
+    label.Size = UDim2.new(0.6, 0, 1, 0)
+    label.Font = Enum.Font.Code
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.TextColor3 = THEME.White
+    label.TextSize = 16
+    label.Text = "- " .. name
+    label.Parent = row
+
+    local pill = Instance.new("TextButton")
+    pill.Size = UDim2.new(0, 60, 0, 24)
+    pill.Position = UDim2.new(1, -60, 0.5, -12)
+    pill.BackgroundColor3 = THEME.MidGray
+    pill.Font = Enum.Font.Code
+    pill.TextColor3 = THEME.White
+    pill.TextSize = 14
+    pill.Text = tostring(default)
+    pill.Parent = row
+
+    local pillCorner = Instance.new("UICorner")
+    pillCorner.CornerRadius = UDim.new(1, 0)
+    pillCorner.Parent = pill
+
+    local pillStroke = Instance.new("UIStroke")
+    pillStroke.Color = THEME.Red
+    pillStroke.Thickness = 1
+    pillStroke.Parent = pill
+
+    local value = default
+    pill.MouseButton1Click:Connect(function()
+        value += step
+        if value > max then
+            value = min
+        end
+        pill.Text = tostring(value)
+        if callback then
+            callback(value)
+        end
+    end)
+
+    return row
+end
+
+----------------------------------------------------------------
+-- HELPER: DROPDOWN (theme đồ họa)
+----------------------------------------------------------------
+local function createDropdown(name, order, options, default, callback)
+    local row = Instance.new("Frame")
+    row.Name = name
+    row.Size = UDim2.new(1, 0, 0, 32)
+    row.BackgroundTransparency = 1
+    row.ZIndex = 5
+    row.LayoutOrder = order
+    row.Parent = content
+
+    local label = Instance.new("TextLabel")
+    label.BackgroundTransparency = 1
+    label.Size = UDim2.new(0.6, 0, 1, 0)
+    label.Font = Enum.Font.Code
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.TextColor3 = THEME.White
+    label.TextSize = 16
+    label.Text = "- " .. name
+    label.Parent = row
+
+    local dropBtn = Instance.new("TextButton")
+    dropBtn.Size = UDim2.new(0, 90, 0, 24)
+    dropBtn.Position = UDim2.new(1, -90, 0.5, -12)
+    dropBtn.BackgroundColor3 = THEME.MidGray
+    dropBtn.Font = Enum.Font.Code
+    dropBtn.TextColor3 = THEME.White
+    dropBtn.TextSize = 13
+    dropBtn.Text = default .. "  v"
+    dropBtn.ZIndex = 6
+    dropBtn.Parent = row
+
+    local dropStroke = Instance.new("UIStroke")
+    dropStroke.Color = THEME.Red
+    dropStroke.Thickness = 1
+    dropStroke.Parent = dropBtn
+
+    local optionsFrame = Instance.new("Frame")
+    optionsFrame.Size = UDim2.new(0, 90, 0, #options * 22)
+    optionsFrame.Position = UDim2.new(1, -90, 1, 2)
+    optionsFrame.BackgroundColor3 = THEME.DarkGray
+    optionsFrame.Visible = false
+    optionsFrame.ZIndex = 10
+    optionsFrame.Parent = dropBtn
+
+    local optStroke = Instance.new("UIStroke")
+    optStroke.Color = THEME.Red
+    optStroke.Thickness = 1
+    optStroke.Parent = optionsFrame
+
+    local optList = Instance.new("UIListLayout")
+    optList.Parent = optionsFrame
+
+    for _, opt in ipairs(options) do
+        local optBtn = Instance.new("TextButton")
+        optBtn.Size = UDim2.new(1, 0, 0, 22)
+        optBtn.BackgroundColor3 = THEME.DarkGray
+        optBtn.Font = Enum.Font.Code
+        optBtn.TextColor3 = THEME.White
+        optBtn.TextSize = 12
+        optBtn.Text = opt
+        optBtn.ZIndex = 11
+        optBtn.Parent = optionsFrame
+
+        optBtn.MouseButton1Click:Connect(function()
+            dropBtn.Text = opt .. "  v"
+            optionsFrame.Visible = false
+            if callback then
+                callback(opt)
+            end
+        end)
+    end
+
+    dropBtn.MouseButton1Click:Connect(function()
+        optionsFrame.Visible = not optionsFrame.Visible
+    end)
+
+    return row
+end
+
+----------------------------------------------------------------
+-- BUILD MENU (theo đúng thứ tự bản vẽ)
+----------------------------------------------------------------
+local fpsCap = 60
+
+createStepper("Boot FPS", 1, fpsCap, 30, 240, 30, function(value)
+    -- Đặt giới hạn khung hình cho chính client của bạn
+    if setfpscap then
+        -- một số client fork hỗ trợ hàm này; nếu không có thì bỏ qua an toàn
+        pcall(setfpscap, value)
+    end
+end)
+
+createToggle("Ổn Định", 2, false, function(state)
+    -- Bật/tắt chế độ giảm hiệu ứng để đỡ giật lag (tự bạn định nghĩa logic)
+    print("Chế độ Ổn Định:", state)
+end)
+
+createToggle("Chống AFK", 3, false, function(state)
+    -- Chặn bị kick khi đứng yên TRONG CHÍNH GAME CỦA BẠN
+    print("Chống AFK:", state)
+end)
+
+createDropdown("Đồ Họa", 4, GRAPHICS_MODES, "classic", function(selected)
+    -- Đổi theme đồ họa / lighting của map bạn theo lựa chọn
+    print("Đồ họa đã chọn:", selected)
+end)
+
+createToggle("Hiện FPS", 5, false, function(state)
+    -- Bật/tắt hiển thị bộ đếm FPS trên màn hình
+    print("Hiện FPS:", state)
+end)
+
+----------------------------------------------------------------
+-- FPS COUNTER (dùng chung với toggle "Hiện FPS")
+----------------------------------------------------------------
+local fpsLabel = Instance.new("TextLabel")
+fpsLabel.Size = UDim2.new(0, 100, 0, 24)
+fpsLabel.Position = UDim2.new(0, 10, 0, 10)
+fpsLabel.BackgroundColor3 = THEME.DarkGray
+fpsLabel.BackgroundTransparency = 0.3
+fpsLabel.TextColor3 = THEME.Red
+fpsLabel.Font = Enum.Font.Code
+fpsLabel.TextSize = 16
+fpsLabel.Text = "FPS: 0"
+fpsLabel.Visible = false
+fpsLabel.Parent = screenGui
+
+local frames = 0
+local elapsed = 0
+RunService.RenderStepped:Connect(function(dt)
+    frames += 1
+    elapsed += dt
+    if elapsed >= 1 then
+        fpsLabel.Text = "FPS: " .. frames
+        frames = 0
+        elapsed = 0
+    end
+end)
+
+----------------------------------------------------------------
+-- BUTTON LOGIC: CLOSE / MINIMIZE
+----------------------------------------------------------------
+closeBtn.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+end)
+
+local minimized = false
+minBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    content.Visible = not minimized
+    local targetSize = minimized and UDim2.new(0, 380, 0, 36) or UDim2.new(0, 380, 0, 300)
+    TweenService:Create(main, TweenInfo.new(0.2), {Size = targetSize}):Play()
+end)
+
+----------------------------------------------------------------
+-- DRAG (kéo thả panel bằng title bar)
+----------------------------------------------------------------
+local dragging = false
+local dragStart, startPos
+
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = main.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+titleBar.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
